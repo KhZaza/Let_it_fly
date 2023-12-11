@@ -1,0 +1,68 @@
+version: '3.8'
+services:
+  db:
+    container_name: db-server
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes: 
+      - ./db/init.sql:/docker-entrypoint-initdb.d/10-init.sql
+  cache:
+    container_name: cache-server
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes: 
+      - cache:/data
+  api:
+    container_name: app-server
+    build:
+      context: ./app_server/
+      dockerfile: ./Dockerfile
+    image: app-server-prod
+    restart: always
+    depends_on:
+      - db
+      - cache
+    ports:
+      - '8000:8000'
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+      REDIS_HOST: cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    links:
+      - db
+      - cache
+    secrets:
+      - mapbox_api_key
+  frontend:
+    container_name: frontend-server
+    build:
+      context: ./frontend/
+      dockerfile: ./Dockerfile
+    image: frontend-server-prod
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - '3000:3000'
+    links:
+      - api
+volumes:
+  cache:
+    driver: local
+secrets:
+   mapbox_api_key:
+     file: ./secrets/mapbox-api-key.txt
