@@ -1,4 +1,4 @@
-# Let It Fly
+# Ride Share Project
 
 This repository contains all of the coded components for the Let it Fly project, including the frontend, backend, and docker deployment.
 
